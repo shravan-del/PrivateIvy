@@ -3,3 +3,5 @@ scikit-learn
 openai
 fastapi
 uvicorn
+numpy
+feedparser
