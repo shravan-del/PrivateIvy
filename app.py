@@ -24,8 +24,7 @@ import sys
 # Set up OpenAI API key - Three different methods:
 
 # Method 1: Set API key directly in the client initialization (not recommended for production)
-client = OpenAI(api_key=os.getenv('open_api'))
-
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 
 def update_articles_file():
