@@ -19,6 +19,7 @@ import feedparser
 # client = InferenceClient("HuggingFaceH4/zephyr-7b-alpha")
 # client=InferenceClient('mistralai/Mistral-7B-v0.1')
 from openai import OpenAI
+import sys
 
 # Set up OpenAI API key - Three different methods:
 
@@ -190,6 +191,7 @@ def respond(message, history: list[tuple[str, str]]):
 # Set up Gradio Chat Interface
 demo = gr.ChatInterface(respond)
 
-# Run chatbot
+
 if __name__ == "__main__":
-    demo.launch(share=True)
+    port = int(os.environ.get("PORT", 7860))  # Render sets $PORT
+    demo.queue().launch(server_name="0.0.0.0", server_port=port)
