@@ -4,3 +4,10 @@ services:
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python app.py
+    plan: free
+
+  - type: cron
+    name: ivy-cron-job
+    env: python
+    schedule: daily
+    command: python cron_worker.py
