@@ -13,6 +13,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import numpy as np
 import os
+import time
+import feedparser
 # Initialize Hugging Face client for chat completions
 # client = InferenceClient("HuggingFaceH4/zephyr-7b-alpha")
 # client=InferenceClient('mistralai/Mistral-7B-v0.1')
@@ -22,6 +24,43 @@ from openai import OpenAI
 
 # Method 1: Set API key directly in the client initialization (not recommended for production)
 client = OpenAI(api_key=os.getenv('open_api'))
+
+
+
+def update_articles_file():
+    feed_url = f"https://medium.com/feed/@sentivity.ai"
+    feed = feedparser.parse(feed_url)
+    
+    if not feed.entries:
+        print("No articles found or couldn't fetch feed")
+        return False
+    
+    latest = feed.entries[0]
+    new_article = f"{latest.published.split('T')[0]} - {latest.title} - {latest.link}\n"
+    articles_path = "articles.txt"
+    
+    existing_content = ""
+    if os.path.exists(articles_path):
+        with open(articles_path, "r", encoding="utf-8") as f:
+            existing_content = f.read()
+        if new_article.strip() in existing_content:
+            print("Latest article already in file")
+            return False
+    
+    with open(articles_path, "w", encoding="utf-8") as f:
+        f.write(new_article + existing_content)
+    print(f"Added new article: {latest.title}")
+    return True
+
+
+
+#while True:
+#   update_articles_file()
+#    time.sleep(86400) 
+
+
+
+    
 
 # Load base context (Ivy's guidelines and product info)
 base_content_path = "base_content.txt"
@@ -83,14 +122,24 @@ def respond(message, history: list[tuple[str, str]]):
 
     # Append strict system rules to enforce Sentivity.ai-only discussion
     full_system_message = (
-        "You are Ivy, Sentivity.ai’s official chatbot. You must ONLY discuss Sentivity.ai products, research, and methodologies. "
-        "You can provide info on companies, NEWS headlines, and snetiment IF it is made my sentivity.ai "
-        "other wise do not comment on external stuff"
-        "Redirect off-topic questions to Sentivity.ai’s website.\n\n"
+        "You are Ivy, Sentivity.ai’s official chatbot. "
+        "WHEN ASKED ABOUT NEWS that means Hive"
+        "You must ONLY discuss Sentivity.ai’s products, research, methodologies, and published insights. "
+        "You CAN answer questions about sentiment trends, market events, or political topics IF they are reported in Sentivity.ai content. "
+        "If the user asks a vague question (e.g., 'anything happen on April 18th?' or 'latest Hive headlines?'), check if Sentivity.ai has a relevant article and return a structured summary. "
+        "Do NOT speculate, do NOT refer to outside sources, and do NOT comment on events not covered by Sentivity.ai. "
+        "If the user asks about unrelated topics, politely redirect them to Sentivity.ai’s website or Medium page. "
+        "Keep your tone helpful, clear, and professional. Use bullet points or numbered lists for headline summaries when appropriate.\n\n"
         + base_content
-        + retrieval_text
-        + "\n\n" + system_message
+        + "\n\nRetrieved Articles Content:\n"
+        + retrieved_context
+        + "\n\n"
+        + system_message
     )
+
+
+
+
 
     # Construct message history
     messages = [{"role": "system", "content": full_system_message}]
