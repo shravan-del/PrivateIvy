@@ -170,7 +170,7 @@ def respond(message, history: list[tuple[str, str]]):
   # Will use OPENAI_API_KEY environment variable
 
         stream = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # or "gpt-4" - free version for some reason
+            model="gpt-4o",  # or "gpt-4" - free version for some reason
             messages=messages,
             max_tokens=max_tokens,
             stream=True,
