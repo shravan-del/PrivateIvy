@@ -3,8 +3,7 @@ services:
     name: privateivy
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: python app.py
-    plan: free
+    startCommand: uvicorn app:app --host 0.0.0.0 --port 10000
 
   - type: cron
     name: ivy-cron-job
