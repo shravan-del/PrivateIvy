@@ -17,10 +17,15 @@ import feedparser
 from openai import OpenAI
 import sys
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 app = FastAPI()
 
+# ✅ Serve static frontend (HTML UI)
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
+
+# ✅ OpenAI Client Initialization
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 def update_articles_file():
@@ -124,6 +129,3 @@ async def chat_endpoint(data: ChatRequest):
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/")
-def root():
-    return {"message": "✅ Ivy is running. Use POST /chat to talk to me."}
