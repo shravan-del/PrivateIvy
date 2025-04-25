@@ -92,32 +92,35 @@ class ChatRequest(BaseModel):
 @app.post("/chat")
 async def chat_endpoint(data: ChatRequest):
     message = data.message
+    print("📥 Incoming message:", message)
 
     max_tokens = 512
     temperature = 0.7
     top_p = 0.95
 
-    # Retrieve context
-    retrieved_context = retrieve_relevant_chunks(message)
-    full_system_message = (
-        "You are Ivy, Sentivity.ai’s official chatbot. "
-        "WHEN ASKED ABOUT NEWS that means Hive"
-        "You must ONLY discuss Sentivity.ai’s products, research, methodologies, and published insights. "
-        "You CAN answer questions about sentiment trends, market events, or political topics IF they are reported in Sentivity.ai content. "
-        "If the user asks a vague question (e.g., 'anything happen on April 18th?' or 'latest Hive headlines?'), check if Sentivity.ai has a relevant article and return a structured summary. "
-        "Do NOT speculate, do NOT refer to outside sources, and do NOT comment on events not covered by Sentivity.ai. "
-        "If the user asks about unrelated topics, politely redirect them to Sentivity.ai’s website or Medium page. "
-        "Keep your tone helpful, clear, and professional. Use bullet points or numbered lists for headline summaries when appropriate.\n\n"
-        + base_content
-        + "\n\nRetrieved Articles Content:\n"
-        + retrieved_context
-        + "\n\n"
-        + "You are a friendly chatbot, but you must only discuss Sentivity.ai products and official insights."
-    )
-
-    messages = [{"role": "system", "content": full_system_message}, {"role": "user", "content": message}]
-
     try:
+        # Retrieve article context
+        retrieved_context = retrieve_relevant_chunks(message)
+        full_system_message = (
+            "You are Ivy, Sentivity.ai’s official chatbot. "
+            "WHEN ASKED ABOUT NEWS that means Hive. "
+            "You must ONLY discuss Sentivity.ai’s products, research, methodologies, and published insights. "
+            "You CAN answer questions about sentiment trends, market events, or political topics IF they are reported in Sentivity.ai content. "
+            "If the user asks a vague question (e.g., 'anything happen on April 18th?' or 'latest Hive headlines?'), check if Sentivity.ai has a relevant article and return a structured summary. "
+            "Do NOT speculate, do NOT refer to outside sources, and do NOT comment on events not covered by Sentivity.ai. "
+            "If the user asks about unrelated topics, politely redirect them to Sentivity.ai’s website or Medium page. "
+            "Keep your tone helpful, clear, and professional. Use bullet points or numbered lists for headline summaries when appropriate.\n\n"
+            + base_content
+            + "\n\nRetrieved Articles Content:\n"
+            + retrieved_context
+            + "\n\nYou are a friendly chatbot, but you must only discuss Sentivity.ai products and official insights."
+        )
+
+        messages = [
+            {"role": "system", "content": full_system_message},
+            {"role": "user", "content": message}
+        ]
+
         response = client.chat.completions.create(
             model="gpt-4o",
             messages=messages,
@@ -125,7 +128,11 @@ async def chat_endpoint(data: ChatRequest):
             temperature=temperature,
             top_p=top_p,
         )
-        return {"response": response.choices[0].message.content}
-    except Exception as e:
-        return {"error": str(e)}
 
+        content = response.choices[0].message.get("content", "").strip()
+        print("📤 Ivy’s response:", content)
+        return {"response": content or "⚠️ Ivy had no response."}
+
+    except Exception as e:
+        print("❌ Error occurred:", str(e))
+        return {"error": str(e)}
