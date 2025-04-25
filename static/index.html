@@ -28,7 +28,13 @@
         body: JSON.stringify({ message: input }),
       });
       const data = await res.json();
-      document.getElementById("response").innerText = data.response || data.error;
+      if (data.response) {
+        document.getElementById("response").innerText = data.response;
+      } else if (data.error) {
+        document.getElementById("response").innerText = "⚠️ " + data.error;
+      } else {
+        document.getElementById("response").innerText = "⚠️ No response received.";
+      }
     });
   </script>
 </body>
