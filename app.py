@@ -19,12 +19,17 @@ import sys
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from fastapi.responses import FileResponse
+
 
 app = FastAPI()
 
 # ✅ Serve static frontend (HTML UI)
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
+@app.get("/")
+def serve_ui():
+    return FileResponse("static/index.html")
 # ✅ OpenAI Client Initialization
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
