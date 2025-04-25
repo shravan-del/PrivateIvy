@@ -4,9 +4,27 @@
   <meta charset="UTF-8">
   <title>Ivy Chatbot</title>
   <style>
-    body { font-family: sans-serif; background: #121212; color: white; padding: 2rem; }
-    input, button { font-size: 1rem; padding: 0.5rem; margin-top: 1rem; }
-    #response { margin-top: 1rem; white-space: pre-wrap; }
+    body {
+      font-family: sans-serif;
+      background: #121212;
+      color: white;
+      padding: 2rem;
+    }
+    input, button {
+      font-size: 1rem;
+      padding: 0.5rem;
+      margin-top: 1rem;
+      border-radius: 4px;
+      border: none;
+    }
+    #response {
+      margin-top: 1rem;
+      white-space: pre-wrap;
+      background-color: #1e1e1e;
+      padding: 1rem;
+      border-radius: 6px;
+      border-left: 4px solid #00ffaa;
+    }
   </style>
 </head>
 <body>
@@ -18,24 +36,42 @@
   <div id="response"></div>
 
   <script>
-    document.getElementById("chat-form").addEventListener("submit", async (e) => {
+    const form = document.getElementById("chat-form");
+    const inputField = document.getElementById("user-msg");
+    const responseBox = document.getElementById("response");
+
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-      const input = document.getElementById("user-msg").value;
-      document.getElementById("response").innerText = "Thinking...";
-      const res = await fetch("/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: input }),
-      });
-      const data = await res.json();
-      if (data.response) {
-        document.getElementById("response").innerText = data.response;
-      } else if (data.error) {
-        document.getElementById("response").innerText = "⚠️ " + data.error;
-      } else {
-        document.getElementById("response").innerText = "⚠️ No response received.";
+      const input = inputField.value.trim();
+      if (!input) return;
+
+      responseBox.innerText = "Ivy is thinking...";
+
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: input }),
+        });
+
+        const data = await res.json();
+        console.log("API response:", data);
+
+        if (data.response) {
+          responseBox.innerText = data.response;
+        } else if (data.error) {
+          responseBox.innerText = "⚠️ " + data.error;
+        } else {
+          responseBox.innerText = "⚠️ No response received.";
+        }
+      } catch (err) {
+        console.error("Fetch failed:", err);
+        responseBox.innerText = "Ivy crashed: " + err.message;
       }
     });
+
+    // Optional: auto-focus input on page load
+    inputField.focus();
   </script>
 </body>
 </html>
