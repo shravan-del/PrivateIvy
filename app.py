@@ -134,7 +134,7 @@ async def chat_endpoint(data: ChatRequest):
             top_p=top_p,
         )
 
-        content = response.choices[0].message.get("content", "").strip()
+        content = response.choices[0].message.content.strip() 
         print("📤 Ivy’s response:", content)
         return {"response": content or "⚠️ Ivy had no response."}
 
