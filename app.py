@@ -24,13 +24,11 @@ from fastapi.responses import FileResponse
 
 app = FastAPI()
 
-# ✅ Serve static frontend (HTML UI)
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def serve_ui():
     return FileResponse("static/index.html")
-# ✅ OpenAI Client Initialization
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 def update_articles_file():
@@ -135,9 +133,9 @@ async def chat_endpoint(data: ChatRequest):
         )
 
         content = response.choices[0].message.content.strip() 
-        print("📤 Ivy’s response:", content)
-        return {"response": content or "⚠️ Ivy had no response."}
+        print("Ivy’s response:", content)
+        return {"response": content or "⚠Ivy had no response."}
 
     except Exception as e:
-        print("❌ Error occurred:", str(e))
+        print("Error occurred:", str(e))
         return {"error": str(e)}
