@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Ivy Chatbot</title>
+  <style>
+    body { font-family: sans-serif; background: #121212; color: white; padding: 2rem; }
+    input, button { font-size: 1rem; padding: 0.5rem; margin-top: 1rem; }
+    #response { margin-top: 1rem; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Ask Ivy</h1>
+  <form id="chat-form">
+    <input type="text" id="user-msg" placeholder="Ask Ivy something..." size="60" required />
+    <button type="submit">Ask</button>
+  </form>
+  <div id="response"></div>
+
+  <script>
+    document.getElementById("chat-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const input = document.getElementById("user-msg").value;
+      document.getElementById("response").innerText = "Thinking...";
+      const res = await fetch("/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: input }),
+      });
+      const data = await res.json();
+      document.getElementById("response").innerText = data.response || data.error;
+    });
+  </script>
+</body>
+</html>
