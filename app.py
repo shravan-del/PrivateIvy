@@ -7,7 +7,6 @@ Original file is located at
     https://colab.research.google.com/drive/1KJTztppfl1nLtxhWxaddWpEoUqkPoQRk
 """
 
-import gradio as gr
 from huggingface_hub import InferenceClient
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -202,8 +201,6 @@ def respond(message, history: list[tuple[str, str]]):
     except Exception as e:
         yield f"⚠️ An error occurred: {str(e)}"
 
-# Set up Gradio Chat Interface
-demo = gr.ChatInterface(respond)
 
 
 if __name__ == "__main__":
