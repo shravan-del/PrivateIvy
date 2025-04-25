@@ -20,6 +20,12 @@ import feedparser
 # client=InferenceClient('mistralai/Mistral-7B-v0.1')
 from openai import OpenAI
 import sys
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+
+app = FastAPI()
+
 
 # Set up OpenAI API key - Three different methods:
 
@@ -95,6 +101,15 @@ def retrieve_relevant_chunks(query, top_k=3):
     top_indices = np.argsort(similarities[0])[::-1][:top_k]
     retrieved = [article_chunks[i] for i in top_indices if i < len(article_chunks)]
     return "\n\n".join(retrieved)
+
+class ChatRequest(BaseModel):
+    message: str
+
+# ✅ POST /chat endpoint
+@app.post("/chat")
+async def chat_endpoint(data: ChatRequest):
+    message = data.message
+
 
 # Ivy's strict response enforcement
 IVY_GREETING = "👋 Hello! I’m Ivy, Sentivity.ai’s official chatbot. How can I help you today?"
