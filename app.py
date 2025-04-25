@@ -14,23 +14,14 @@ import numpy as np
 import os
 import time
 import feedparser
-# Initialize Hugging Face client for chat completions
-# client = InferenceClient("HuggingFaceH4/zephyr-7b-alpha")
-# client=InferenceClient('mistralai/Mistral-7B-v0.1')
 from openai import OpenAI
 import sys
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-
 app = FastAPI()
 
-
-# Set up OpenAI API key - Three different methods:
-
-# Method 1: Set API key directly in the client initialization (not recommended for production)
 client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
-
 
 def update_articles_file():
     feed_url = f"https://medium.com/feed/@sentivity.ai"
@@ -57,17 +48,7 @@ def update_articles_file():
     print(f"Added new article: {latest.title}")
     return True
 
-
-
-#while True:
-#   update_articles_file()
-#    time.sleep(86400) 
-
-
-
-    
-
-# Load base context (Ivy's guidelines and product info)
+# Load base context
 base_content_path = "base_content.txt"
 try:
     with open(base_content_path, "r", encoding="utf-8") as f:
@@ -77,7 +58,7 @@ except FileNotFoundError:
     base_content = "No base content found."
     print("Warning: base_content.txt not found.")
 
-# Load article content (previous Sentivity.ai articles)
+# Load articles
 articles_file_path = "articles.txt"
 try:
     with open(articles_file_path, "r", encoding="utf-8") as f:
@@ -87,13 +68,12 @@ except FileNotFoundError:
     articles_content = "No article content found."
     print("Warning: articles.txt not found.")
 
-# Build TF-IDF vectorizer for retrieval
+# Vectorizer setup
 article_chunks = [chunk.strip() for chunk in articles_content.split("\n\n") if chunk.strip()]
 vectorizer = TfidfVectorizer()
 tfidf_matrix = vectorizer.fit_transform(article_chunks)
 print("TF-IDF matrix shape:", tfidf_matrix.shape)
 
-# Function to retrieve relevant chunks based on query
 def retrieve_relevant_chunks(query, top_k=3):
     query_vec = vectorizer.transform([query])
     similarities = cosine_similarity(query_vec, tfidf_matrix)
@@ -104,37 +84,16 @@ def retrieve_relevant_chunks(query, top_k=3):
 class ChatRequest(BaseModel):
     message: str
 
-# ✅ POST /chat endpoint
 @app.post("/chat")
 async def chat_endpoint(data: ChatRequest):
     message = data.message
 
-
-# Ivy's strict response enforcement
-IVY_GREETING = "👋 Hello! I’m Ivy, Sentivity.ai’s official chatbot. How can I help you today?"
-
-
-
-def respond(message, history: list[tuple[str, str]]):
-    """
-    Handles response generation with strict enforcement that Ivy only discusses Sentivity.ai-related topics.
-    """
-
-    # # If chat is empty, Ivy greets the user
-    # if not history:
-    #     history.append(("", IVY_GREETING))  # Pre-fill the chat with Ivy's greeting
-    #     yield history  # Yield the updated history to display the greeting
-
-    system_message = "You are a friendly chatbot, but you must only discuss Sentivity.ai products and official insights."
     max_tokens = 512
     temperature = 0.7
     top_p = 0.95
 
-    # Retrieve relevant chunks from article content based on user query
+    # Retrieve context
     retrieved_context = retrieve_relevant_chunks(message)
-    retrieval_text = "\n\nRetrieved Articles Content:\n" + retrieved_context
-
-    # Append strict system rules to enforce Sentivity.ai-only discussion
     full_system_message = (
         "You are Ivy, Sentivity.ai’s official chatbot. "
         "WHEN ASKED ABOUT NEWS that means Hive"
@@ -148,61 +107,23 @@ def respond(message, history: list[tuple[str, str]]):
         + "\n\nRetrieved Articles Content:\n"
         + retrieved_context
         + "\n\n"
-        + system_message
+        + "You are a friendly chatbot, but you must only discuss Sentivity.ai products and official insights."
     )
 
-
-
-
-
-    # Construct message history
-    messages = [{"role": "system", "content": full_system_message}]
-    for user_msg, assistant_msg in history:
-        if user_msg:
-            messages.append({"role": "user", "content": user_msg})
-        if assistant_msg:
-            messages.append({"role": "assistant", "content": assistant_msg})
-
-    messages.append({"role": "user", "content": message})
-
-    response = ""
-
-    # # Call the chat completion API (streaming enabled)
-    # for api_message in client.chat_completion(
-    #     messages,
-    #     max_tokens=max_tokens,
-    #     stream=True,
-    #     temperature=temperature,
-    #     top_p=top_p,
-    # ):
-    #     token = api_message.choices[0].delta.content
-    #     response += token
-    #     yield response
+    messages = [{"role": "system", "content": full_system_message}, {"role": "user", "content": message}]
 
     try:
-        # Call the OpenAI API (streaming enabled)
-  # Will use OPENAI_API_KEY environment variable
-
-        stream = client.chat.completions.create(
-            model="gpt-4o",  # or "gpt-4" - free version for some reason
+        response = client.chat.completions.create(
+            model="gpt-4o",
             messages=messages,
             max_tokens=max_tokens,
-            stream=True,
             temperature=temperature,
             top_p=top_p,
         )
-
-        for chunk in stream:
-            if chunk.choices[0].delta.content is not None:
-                token = chunk.choices[0].delta.content
-                response += token
-                yield response
-
+        return {"response": response.choices[0].message.content}
     except Exception as e:
-        yield f"⚠️ An error occurred: {str(e)}"
+        return {"error": str(e)}
 
-
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 7860))  # Render sets $PORT
-    demo.queue().launch(server_name="0.0.0.0", server_port=port)
+@app.get("/")
+def root():
+    return {"message": "✅ Ivy is running. Use POST /chat to talk to me."}
